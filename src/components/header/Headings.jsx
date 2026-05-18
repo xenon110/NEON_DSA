@@ -1,4 +1,4 @@
-import { Flex, Text, Tooltip } from '@chakra-ui/react'
+import { Flex, Text, Tooltip, Badge } from '@chakra-ui/react'
 
 import {
     DarkModeToggle,
