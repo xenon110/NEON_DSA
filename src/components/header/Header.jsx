@@ -13,6 +13,7 @@ const Header = ({
     selectedContentIndex,
     searchValue,
     setSearchValue,
+    user,
 }) => {
     const numberOfTotalCompletedQuestions = data.data.header.completedQuestions
     const isDarkMode = data.data.header.darkMode
@@ -27,12 +28,13 @@ const Header = ({
             userSelect={'none'}
         >
             <Ads data={data} />
-            <Headings data={data} setData={setData} />
+            <Headings data={data} setData={setData} user={user} />
             <SubHeadings
                 data={data}
                 selectedContentIndex={selectedContentIndex}
                 showBreadCrumbs={!isHomeScreen}
             />
+
             {isHomeScreen ? (
                 numberOfTotalCompletedQuestions === 0 ? (
                     <Text

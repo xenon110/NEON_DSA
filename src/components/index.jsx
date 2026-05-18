@@ -5,7 +5,7 @@ import Content from './content/Content.jsx'
 import Footer from './footer/Footer.jsx'
 import Header from './header/Header.jsx'
 
-const DSA = ({ data, setData, isHomeScreen, selectedContentIndex }) => {
+const DSA = ({ data, setData, isHomeScreen, selectedContentIndex, user, subscription }) => {
     let [searchValue, setSearchValue] = useState('')
     const isDarkMode = data.data.header.darkMode
     return (
@@ -25,6 +25,8 @@ const DSA = ({ data, setData, isHomeScreen, selectedContentIndex }) => {
                 selectedContentIndex={selectedContentIndex}
                 searchValue={searchValue}
                 setSearchValue={setSearchValue}
+                user={user}
+                subscription={subscription}
             />
             <Content
                 data={data}
@@ -32,10 +34,13 @@ const DSA = ({ data, setData, isHomeScreen, selectedContentIndex }) => {
                 isHomeScreen={isHomeScreen}
                 selectedContentIndex={selectedContentIndex}
                 searchValue={searchValue}
+                user={user}
+                subscription={subscription}
             />
             <Footer data={data} />
         </Flex>
     )
 }
+
 
 export default DSA

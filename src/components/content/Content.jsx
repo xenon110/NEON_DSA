@@ -4,6 +4,7 @@ import { Flex, Grid } from '@chakra-ui/react'
 
 import SingleCategory from './SingleCategory.jsx'
 import SingleTopic from './SingleTopic.jsx'
+import CurriculumOverview from './CurriculumOverview.jsx'
 
 const Content = ({
     data,
@@ -11,10 +12,12 @@ const Content = ({
     isHomeScreen,
     selectedContentIndex,
     searchValue,
+    user,
+    subscription,
 }) => {
     const isDarkMode = data.data.header.darkMode
     const listOfTopics = data.data.content
-    const listOfCategory = data.data.content[selectedContentIndex].categoryList
+    const listOfCategory = data.data.content[selectedContentIndex]?.categoryList
 
     return (
         <Flex
@@ -41,9 +44,10 @@ const Content = ({
                     <Grid
                         templateColumns={{
                             base: 'repeat(1, 1fr)',
-                            md: 'repeat(3, 1fr)',
+                            md: 'repeat(2, 1fr)',
+                            lg: 'repeat(3, 1fr)',
                         }}
-                        gap={4}
+                        gap={6}
                     >
                         {listOfTopics.map((contentData, index) => {
                             return (
@@ -51,10 +55,13 @@ const Content = ({
                                     data={data}
                                     selectedContentIndex={index}
                                     key={index}
+                                    user={user}
+                                    subscription={subscription}
                                 />
                             )
                         })}
                     </Grid>
+                    <CurriculumOverview data={data} user={user} subscription={subscription} />
                 </>
             ) : (
                 listOfCategory.map((categoryData, index) => {

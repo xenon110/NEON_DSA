@@ -1,5 +1,6 @@
 import { MoonIcon, SunIcon } from '@chakra-ui/icons'
-import { Icon } from '@chakra-ui/react'
+import { Flex, Icon, Text } from '@chakra-ui/react'
+import { supabase } from '../../supabaseClient'
 
 const DarkModeToggle = ({ data, setData, toShow }) => {
     function changeTheme(toDarkMode) {
@@ -23,6 +24,7 @@ const DarkModeToggle = ({ data, setData, toShow }) => {
             visibility={toShow ? 'visible' : 'hidden'}
             cursor={'pointer'}
             display={{ base: 'none', md: 'flex' }}
+            ml={5}
             onClick={() => {
                 changeTheme(false)
             }}
@@ -36,6 +38,7 @@ const DarkModeToggle = ({ data, setData, toShow }) => {
             visibility={toShow ? 'visible' : 'hidden'}
             cursor={'pointer'}
             display={{ base: 'none', md: 'flex' }}
+            ml={5}
             onClick={() => {
                 changeTheme(true)
             }}
@@ -179,6 +182,145 @@ const LeetCode = props => (
     </a>
 )
 
+const ExportProgress = ({ data }) => {
+    function exportData() {
+        const dataStr =
+            'data:text/json;charset=utf-8,' +
+            encodeURIComponent(JSON.stringify(data))
+        const downloadAnchorNode = document.createElement('a')
+        downloadAnchorNode.setAttribute('href', dataStr)
+        downloadAnchorNode.setAttribute('download', 'dsa_progress.json')
+        document.body.appendChild(downloadAnchorNode)
+        downloadAnchorNode.click()
+        downloadAnchorNode.remove()
+    }
+
+    return (
+        <Icon
+            viewBox="0 0 24 24"
+            w={6}
+            h={6}
+            color={'#F3C623'}
+            cursor={'pointer'}
+            onClick={exportData}
+            ml={4}
+            display={{ base: 'none', md: 'flex' }}
+        >
+            <path
+                fill="currentColor"
+                d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"
+            />
+        </Icon>
+    )
+}
+
+const ImportProgress = ({ setData }) => {
+    function importData(event) {
+        const file = event.target.files[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = e => {
+            try {
+                const importedData = JSON.parse(e.target.result)
+                if (importedData && importedData.data) {
+                    setData(importedData)
+                    alert('Progress imported successfully!')
+                } else {
+                    alert('Invalid progress file.')
+                }
+            } catch (err) {
+                alert('Error parsing file.')
+            }
+        }
+        reader.readAsText(file)
+    }
+
+    return (
+        <Flex ml={4} display={{ base: 'none', md: 'flex' }}>
+            <label htmlFor="import-progress" style={{ cursor: 'pointer' }}>
+                <Icon viewBox="0 0 24 24" w={6} h={6} color={'#F3C623'}>
+                    <path
+                        fill="currentColor"
+                        d="M5,20H19V18H5M5,10H9V16H15V10H19L12,3L5,10Z"
+                    />
+                </Icon>
+            </label>
+            <input
+                id="import-progress"
+                type="file"
+                accept=".json"
+                onChange={importData}
+                style={{ display: 'none' }}
+            />
+        </Flex>
+    )
+}
+
+const UserAuth = ({ user }) => {
+    async function handleAuth() {
+        if (user) {
+            if (supabase) {
+                await supabase.auth.signOut()
+            }
+            localStorage.removeItem('A2Z_SkippedLogin')
+            window.location.reload()
+        } else {
+            localStorage.removeItem('A2Z_SkippedLogin')
+            window.location.reload()
+        }
+    }
+
+    const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'
+
+    return (
+        <Flex
+            alignItems={'center'}
+            ml={6}
+            display={{ base: 'none', md: 'flex' }}
+        >
+            {user ? (
+                <Flex direction="column" alignItems="flex-end" gap={0}>
+                    <Text
+                        fontSize={'sm'}
+                        fontWeight={'bold'}
+                        color={'#F3C623'}
+                        fontFamily={'customFamily'}
+                        lineHeight="1.1"
+                    >
+                        {displayName}
+                    </Text>
+                    <Text
+                        fontSize={'11px'}
+                        fontWeight={'semibold'}
+                        color={'#F3C623'}
+                        fontFamily={'customFamily'}
+                        cursor={'pointer'}
+                        opacity={0.7}
+                        _hover={{ opacity: 1, textDecoration: 'underline' }}
+                        onClick={handleAuth}
+                        mt={1}
+                    >
+                        Sign Out
+                    </Text>
+                </Flex>
+            ) : (
+                <Text
+                    fontSize={'sm'}
+                    fontWeight={'bold'}
+                    color={'#F3C623'}
+                    fontFamily={'customFamily'}
+                    cursor={'pointer'}
+                    onClick={handleAuth}
+                    _hover={{ textDecoration: 'underline' }}
+                >
+                    Sign In
+                </Text>
+            )}
+        </Flex>
+    )
+}
+
 export {
     Bookmark,
     DarkModeToggle,
@@ -190,4 +332,9 @@ export {
     Tick,
     UnTick,
     YouTube,
+    ExportProgress,
+    ImportProgress,
+    UserAuth,
 }
+
+

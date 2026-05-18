@@ -1,65 +1,80 @@
 function DiffChecker(original, current) {
-    if (JSON.stringify(original) === JSON.stringify(current)) return original
+    if (!current || !current.data) return original
 
-    original.data.header['darkMode'] = current.data.header['darkMode']
+    // Copy global settings
+    if (current.data.header) {
+        if (current.data.header.darkMode !== undefined)
+            original.data.header.darkMode = current.data.header.darkMode
+        if (current.data.header.isBookmarkFilterRequired !== undefined)
+            original.data.header.isBookmarkFilterRequired =
+                current.data.header.isBookmarkFilterRequired
+    }
 
-    original.data.header['isBookmarkFilterRequired'] =
-        current.data.header['isBookmarkFilterRequired']
+    // Maps to track progress
+    const questionProgressMap = {}
+    const contentProgressMap = {}
 
-    original.data.header['completedQuestions'] =
-        current.data.header['completedQuestions']
-
-    const contentLength = current.data.content.length - 1
-    original.data.content.map((singleContent, index1) => {
-        if (index1 <= contentLength) {
-            singleContent['contentUserNotes'] =
-                current.data.content[index1]['contentUserNotes']
-
-            singleContent['contentCompletedQuestions'] =
-                current.data.content[index1]['contentCompletedQuestions']
-
-            const categoryLength =
-                current.data.content[index1]['categoryList'].length - 1
-            singleContent['categoryList'].map((singleCategory, index2) => {
-                if (index2 <= categoryLength) {
-                    singleCategory['categoryCompletedQuestions'] =
-                        current.data.content[index1]['categoryList'][index2][
-                            'categoryCompletedQuestions'
-                        ]
-
-                    const questionLength =
-                        current.data.content[index1]['categoryList'][index2][
-                            'questionList'
-                        ].length - 1
-                    singleCategory['questionList'].map(
-                        (singleQuestion, index3) => {
-                            if (index3 <= questionLength) {
-                                singleQuestion['isDone'] =
-                                    current.data.content[index1][
-                                        'categoryList'
-                                    ][index2]['questionList'][index3]['isDone']
-
-                                singleQuestion['isBookmarked'] =
-                                    current.data.content[index1][
-                                        'categoryList'
-                                    ][index2]['questionList'][index3][
-                                        'isBookmarked'
-                                    ]
-
-                                singleQuestion['userNotes'] =
-                                    current.data.content[index1][
-                                        'categoryList'
-                                    ][index2]['questionList'][index3][
-                                        'userNotes'
-                                    ]
+    // Build the progress maps from current data
+    if (current.data.content) {
+        current.data.content.forEach((content) => {
+            if (content.contentPath) {
+                contentProgressMap[content.contentPath] = {
+                    contentUserNotes: content.contentUserNotes || '',
+                }
+            }
+            if (content.categoryList) {
+                content.categoryList.forEach((category) => {
+                    if (category.questionList) {
+                        category.questionList.forEach((question) => {
+                            if (question.questionId) {
+                                questionProgressMap[question.questionId] = {
+                                    isDone: question.isDone,
+                                    isBookmarked: question.isBookmarked,
+                                    userNotes: question.userNotes,
+                                }
                             }
-                        }
-                    )
+                        })
+                    }
+                })
+            }
+        })
+    }
+
+    let totalCompleted = 0
+
+    // Apply progress to original data and recalculate counts
+    original.data.content.forEach((content) => {
+        const savedContentProgress = contentProgressMap[content.contentPath]
+        if (savedContentProgress) {
+            content.contentUserNotes = savedContentProgress.contentUserNotes || ''
+        }
+
+        let contentCompleted = 0
+        content.categoryList.forEach((category) => {
+            let categoryCompleted = 0
+            category.questionList.forEach((question) => {
+                const savedQuestionProgress = questionProgressMap[question.questionId]
+                if (savedQuestionProgress) {
+                    question.isDone = savedQuestionProgress.isDone || false
+                    question.isBookmarked = savedQuestionProgress.isBookmarked || false
+                    question.userNotes = savedQuestionProgress.userNotes || ''
+                }
+                if (question.isDone) {
+                    categoryCompleted++
                 }
             })
-        }
+            category.categoryCompletedQuestions = categoryCompleted
+            contentCompleted += categoryCompleted
+        })
+        content.contentCompletedQuestions = contentCompleted
+        totalCompleted += contentCompleted
     })
+
+    original.data.header.completedQuestions = totalCompleted
+
     return original
 }
 
 export default DiffChecker
+
+
