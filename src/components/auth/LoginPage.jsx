@@ -1,6 +1,59 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../supabaseClient'
 import './LoginPage.css'
+
+// ── Toast Popup Component ──
+const ToastPopup = ({ toast, onClose }) => {
+    const [isExiting, setIsExiting] = useState(false)
+
+    const handleClose = useCallback(() => {
+        setIsExiting(true)
+        setTimeout(() => onClose(), 300)
+    }, [onClose])
+
+    useEffect(() => {
+        const timer = setTimeout(() => handleClose(), 5000)
+        return () => clearTimeout(timer)
+    }, [handleClose])
+
+    if (!toast) return null
+
+    return (
+        <div className={`toast-overlay ${isExiting ? 'toast-overlay--exit' : ''}`}>
+            <div className={`toast-popup toast-popup--${toast.type} ${isExiting ? 'toast-popup--exit' : ''}`}>
+                <div className="toast-glow" />
+                <div className="toast-content">
+                    <div className="toast-icon-wrap">
+                        {toast.type === 'warning' ? (
+                            <svg viewBox="0 0 24 24" fill="none" className="toast-icon">
+                                <path d="M12 9v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M12 17h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        ) : (
+                            <svg viewBox="0 0 24 24" fill="none" className="toast-icon">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                                <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            </svg>
+                        )}
+                    </div>
+                    <div className="toast-text">
+                        <div className="toast-title">{toast.title}</div>
+                        <div className="toast-desc">{toast.desc}</div>
+                    </div>
+                    <button className="toast-close" onClick={handleClose}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div className="toast-progress">
+                    <div className={`toast-progress-bar toast-progress-bar--${toast.type}`} />
+                </div>
+            </div>
+        </div>
+    )
+}
 
 const CODE_PARTICLES = [
     'function solve(arr) {',
@@ -21,6 +74,7 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState(null) // { type: 'error'|'success', text: '' }
+    const [toast, setToast] = useState(null) // { type: 'warning'|'error', title: '', desc: '' }
 
     const clearMessage = () => setMessage(null)
 
@@ -55,7 +109,7 @@ const LoginPage = () => {
         setLoading(true)
         clearMessage()
 
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -66,11 +120,41 @@ const LoginPage = () => {
         setLoading(false)
 
         if (error) {
-            const errorMsg = error.message.includes('email rate limit exceeded')
+            // Check for duplicate email errors from Supabase
+            const errMsg = error.message.toLowerCase()
+            if (
+                errMsg.includes('user already registered') ||
+                errMsg.includes('already been registered') ||
+                errMsg.includes('email address is already')
+            ) {
+                setToast({
+                    type: 'warning',
+                    title: 'Email Already Exists',
+                    desc: `An account with "${email}" is already registered. Please sign in instead.`,
+                })
+                return
+            }
+
+            const errorMsg = errMsg.includes('email rate limit exceeded')
                 ? 'Too many requests! Please wait a minute or disable "Confirm Email" in your Supabase Dashboard.'
                 : error.message;
             setMessage({ type: 'error', text: errorMsg })
         } else {
+            // Supabase may return a fake user with empty identities when email exists
+            // (when "Confirm Email" is enabled and the email is already taken)
+            if (
+                signUpData?.user &&
+                signUpData.user.identities &&
+                signUpData.user.identities.length === 0
+            ) {
+                setToast({
+                    type: 'warning',
+                    title: 'Email Already Exists',
+                    desc: `An account with "${email}" is already registered. Please sign in instead.`,
+                })
+                return
+            }
+
             setMessage({
                 type: 'success',
                 text: 'Account created! Check your email to confirm, or sign in directly.',
@@ -146,6 +230,8 @@ const LoginPage = () => {
 
     return (
         <div className="login-page" id="login-page">
+            {/* Toast Popup */}
+            {toast && <ToastPopup toast={toast} onClose={() => setToast(null)} />}
             {/* Background Effects */}
             <div className="login-bg-orb login-bg-orb--1" />
             <div className="login-bg-orb login-bg-orb--2" />
