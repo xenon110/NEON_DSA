@@ -15,7 +15,7 @@ function App({ fetchData }) {
     const location = useLocation()
     const [data, setData] = useState(fetchData)
     const [user, setUser] = useState(null)
-    const [subscription, setSubscription] = useState({ status: 'none', plan_type: null })
+    const [subscription, setSubscription] = useState({ status: 'active', plan_type: 'premium' })
     const [authLoading, setAuthLoading] = useState(!!supabase) // Only show loading if supabase is configured
     const isCloudLoading = useRef(false)
 
@@ -66,24 +66,8 @@ function App({ fetchData }) {
                 }
             })
 
-        // Fetch Subscription Status
-        supabase
-            .from('subscriptions')
-            .select('status, plan_type, expiry_date')
-            .eq('user_id', user.id)
-            .single()
-            .then(({ data: subData, error }) => {
-                if (error) {
-                    if (error.code !== 'PGRST116') {
-                        console.error('Error fetching subscription:', error)
-                    }
-                    setSubscription({ status: 'none', plan_type: null })
-                    return
-                }
-                if (subData) {
-                    setSubscription(subData)
-                }
-            })
+        // Fetch Subscription Status (Disabled - All users are free/premium)
+        setSubscription({ status: 'active', plan_type: 'premium' })
     }, [user])
 
     // Save to localStorage (always) and Supabase (if logged in)
